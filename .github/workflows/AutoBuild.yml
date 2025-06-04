@@ -30,3 +30,9 @@ jobs:
 
     - name: Build
       run: ./gradlew build
+
+    - name: Upload Files
+      uses: actions/upload-artifact@v4.6.2
+      with:
+        name: SoftWare
+        path: build/libs/*.jar
