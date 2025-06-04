@@ -28,5 +28,5 @@ jobs:
     - name: Make gradlew executable
       run: chmod +x ./gradlew
 
-    - name: Build Mods
+    - name: Build
       run: ./gradlew build
