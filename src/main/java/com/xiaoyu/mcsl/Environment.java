@@ -45,7 +45,7 @@ public class Environment {
         // 操作系统对应的默认安装路径
         final Map<String, Map<String, String>> JavaDefaultInstallPaths = new HashMap<>();
 
-        // Windows 路径
+        // Windows路径
         Map<String, String> WindowsPaths = new HashMap<>();
         WindowsPaths.put("ZuluJava8", "C:\\Program Files\\Zulu\\zulu-8\\bin\\java.exe");
         WindowsPaths.put("OracleJava8", "C:\\Program Files\\Java\\jdk1.8.0\\bin\\java.exe");
@@ -58,7 +58,7 @@ public class Environment {
         }
         JavaDefaultInstallPaths.put("Windows", WindowsPaths);
 
-        // Linux 路径
+        // Linux路径
         Map<String, String> LinuxPaths = new HashMap<>();
         LinuxPaths.put("ZuluJava8", "/usr/lib/jvm/zulu-8/bin/java");
         LinuxPaths.put("OracleJava8", "/usr/lib/jvm/java-8-oracle/bin/java");
@@ -76,6 +76,9 @@ public class Environment {
             checkJDK(JavaDefaultInstallPaths.get("Windows"));
         } else if (Linux) {
             checkJDK(JavaDefaultInstallPaths.get("Linux"));
+        } else {
+            System.out.println(I18n.getI18nMessage("environment.system.unknown") + OS);
+            System.exit(1);
         }
     }
 
@@ -84,16 +87,16 @@ public class Environment {
         // 动态构建优先级列表
         List<String> priorityOrder = new ArrayList<>();
 
+        priorityOrder.add("ZuluJava8");
+        priorityOrder.add("OracleJava8");
+        priorityOrder.add("ZuluJava17");
+        priorityOrder.add("OracleJava17");
+
         // 只有当前不是Java21时才需要检查Java21路径
         if (!Java21) {
             priorityOrder.add("ZuluJava21");
             priorityOrder.add("OracleJava21");
         }
-
-        priorityOrder.add("ZuluJava17");
-        priorityOrder.add("OracleJava17");
-        priorityOrder.add("ZuluJava8");
-        priorityOrder.add("OracleJava8");
 
         // 记录已找到的版本避免重复
         Set<String> foundVersions = new HashSet<>();
@@ -117,13 +120,20 @@ public class Environment {
 
                 // 设置对应的静态布尔值
                 switch (version) {
-                    case "8": Java8 = true; break;
-                    case "17": Java17 = true; break;
-                    case "21":
-                        // Java21 已在静态块中设置，不需要重复设置
+                    case "8":
+                        Java8 = true;
+                        break;
+                    case "17":
+                        Java17 = true;
                         break;
                 }
             }
         }
     }
+
+    // 获取Java路径
+    public static Path Java8Path = Environment.JavaPaths.get("Java8Path");
+    public static Path Java17Path = Environment.JavaPaths.get("Java17Path");
+    public static Path Java21Path = Environment.JavaPaths.get("Java21Path");
+
 }
