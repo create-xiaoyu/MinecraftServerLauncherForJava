@@ -1,5 +1,10 @@
 package com.xiaoyu.mcsl;
 
+import com.google.gson.Gson;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
@@ -8,66 +13,69 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 
-import com.google.gson.Gson;
-import com.google.gson.JsonArray;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
-
 public class API {
 
-    public static String VanillaAPIRequestLatest;
+    public static class CoreVersionInfo {
 
-    public static List<VersionInfo> VanillaVersions = new ArrayList<>();
+        public final String CoreVersionID;
+        public final String CoreVersionType;
 
-    public static class VersionInfo {
-        public final String VanillaVersionID;
-        public final String VanillaVersionType;
-
-        public VersionInfo(String id, String type) {
-            this.VanillaVersionID = id;
-            this.VanillaVersionType = type;
+        public CoreVersionInfo(String id, String type) {
+            this.CoreVersionID = id;
+            this.CoreVersionType = type;
         }
     }
 
-    public static void RequestAPI(String APIName) {
-        switch (APIName) {
-            case "Vanilla":
+    public static String CoreLatestVersion;
+
+    private static final String VanillaAPI = "https://launchermeta.mojang.com/mc/game/version_manifest.json";
+
+    public static List<CoreVersionInfo> ReleaseVersions = new ArrayList<>();
+
+    public static void RequestAPI(String CoreName) {
+        switch (CoreName) {
+            case "Vanilla": {
                 try {
 
                     HttpClient httpClient = HttpClient.newHttpClient();
 
-                    HttpRequest request = HttpRequest.newBuilder()
-                            .uri(new URI("https://launchermeta.mojang.com/mc/game/version_manifest.json"))
+                    HttpRequest APIRequest = HttpRequest.newBuilder()
+                            .uri(new URI(VanillaAPI))
                             .timeout(Duration.ofSeconds(10))
                             .build();
 
                     HttpResponse<String> VanillaAPIResponse = httpClient.send(
-                            request, HttpResponse.BodyHandlers.ofString()
+                            APIRequest, HttpResponse.BodyHandlers.ofString()
                     );
 
                     Gson gson = new Gson();
+
                     JsonObject root = gson.fromJson(VanillaAPIResponse.body(), JsonObject.class);
 
                     JsonObject VanillaAPIRequestVersion = root.getAsJsonObject("latest");
-                    VanillaAPIRequestLatest = VanillaAPIRequestVersion.get("release").getAsString();
+                    CoreLatestVersion = VanillaAPIRequestVersion.get("release").getAsString();
 
-                    JsonArray VanillaAPIRequestRelease = root.getAsJsonArray("versions");
-                    VanillaVersions.clear(); // 清空旧数据
+                    JsonArray CoreVersion = root.getAsJsonArray("versions");
+                    ReleaseVersions.clear(); // 清空旧数据
 
-                    for (JsonElement VanillaAPIRequestVersionElement : VanillaAPIRequestRelease) {
+                    for (JsonElement VanillaAPIRequestVersionElement : CoreVersion) {
                         JsonObject VanillaVersion = VanillaAPIRequestVersionElement.getAsJsonObject();
                         String id = VanillaVersion.get("id").getAsString();
                         String type = VanillaVersion.get("type").getAsString();
-                        VanillaVersions.add(new VersionInfo(id, type));
+                        if ("release".equals(type)) {
+                            ReleaseVersions.add(new CoreVersionInfo(id, type));
+                        }
                     }
 
                 } catch (Exception Error) {
-                    System.err.println("api.error.println " + Error.getMessage());
+                    System.err.println(I18n.getI18nMessage("api.error.print") + Error.getMessage());
                 }
                 break;
 
-            case "Spigot":
+            }
+            case "Spigot": {
                 break;
+            }
         }
     }
 }

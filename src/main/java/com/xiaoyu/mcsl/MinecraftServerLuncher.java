@@ -1,5 +1,6 @@
 package com.xiaoyu.mcsl;
 
+import java.util.List;
 import java.util.Scanner;
 
 public class MinecraftServerLuncher {
@@ -11,6 +12,43 @@ public class MinecraftServerLuncher {
         System.out.print(message);
         return scanner.nextLine().trim(); // 去除首尾空白字符
     }
+
+    public static void PrintReleaseVersions(List<API.CoreVersionInfo> versions) {
+        if (versions.isEmpty()) {
+            System.out.println(I18n.getI18nMessage("mcsl.printreleaseversions.norelease"));
+            return;
+        }
+
+        // 找到最长的版本号长度
+        int maxVersionLength = versions.stream()
+                .mapToInt(v -> v.CoreVersionID.length())
+                .max()
+                .orElse(8); // 默认最小宽度
+
+        // 计算每列宽度（版本号长度+2个空格）
+        int columnWidth = maxVersionLength + 2;
+        int columns = 3; // 每行显示3个版本
+
+        System.out.println("\n" + ServerCore + I18n.getI18nMessage("mcsl.printreleaseversions.release") + "\n");
+
+        int count = 0;
+        for (API.CoreVersionInfo version : versions) {
+            // 格式化每个版本号，固定宽度右对齐
+            String formatted = String.format("%-" + columnWidth + "s", version.CoreVersionID);
+            System.out.print(formatted);
+
+            // 每3个版本换行
+            if (++count % columns == 0) {
+                System.out.println();
+            }
+        }
+
+        System.out.println();
+        System.out.println("\nLatest version: " + API.CoreLatestVersion);
+        System.out.println();
+        System.out.println("Total releases: " + versions.size());
+    }
+
 
     public static void main(String[] args) {
 
@@ -24,11 +62,8 @@ public class MinecraftServerLuncher {
             case "--InstallServer":
                 System.out.println(I18n.getI18nMessage("parameters.text.InstallServer"));
                 System.out.println();
-                System.out.println(I18n.getI18nMessage("parameters.text.PrintServerCoreList.Vanilla") + "Vanilla");
                 PrintServerCoreList.PrintAllServerCoreList();
                 ServerCore = InputMessage(I18n.getI18nMessage("parameters.text.InstallServer.Input"));
-                System.out.println();
-                System.out.println(I18n.getI18nMessage("parameters.text.InstallServer.UserInput") + ServerCore);
 
                 // 检查输入是否为空
                 if (ServerCore.isEmpty()) {
@@ -38,24 +73,19 @@ public class MinecraftServerLuncher {
 
                 // 检查输入是否有效
                 if (!PrintServerCoreList.isValidCore(ServerCore)) {
-                    System.out.println(I18n.getI18nMessage("parameters.text.InstallServer.UserInput.Error.InputUnknown"));
+                    System.out.println(ServerCore + I18n.getI18nMessage("parameters.text.InstallServer.UserInput.Error.InputUnknown"));
                     return;
                 }
 
                 // 请求API
                 API.RequestAPI(ServerCore);
 
-                // API返回结果
-                System.out.println("最新正式版：" + API.VanillaAPIRequestLatest);
-                System.out.println();
-                System.out.println("所有版本：");
-                System.out.println();
-                for (API.VersionInfo version : API.VanillaVersions) {
-                    System.out.println("- " + version.VanillaVersionID + " [" + version.VanillaVersionType + "]");
-                }
+                // 打印结果
+                PrintReleaseVersions(API.ReleaseVersions);
                 break;
 
             case "--PrintServerCoreList":
+                System.out.println(I18n.getI18nMessage("parameters.text.PrintServerCoreList"));
                 PrintServerCoreList.PrintAllServerCoreList();
                 break;
 

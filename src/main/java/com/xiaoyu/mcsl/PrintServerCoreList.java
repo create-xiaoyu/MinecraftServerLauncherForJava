@@ -9,6 +9,7 @@ public class PrintServerCoreList {
 
     static {
         // 初始化核心类别和名称
+        CoreCategories.put("parameters.text.PrintServerCoreList.Vanilla", List.of("Vanilla"));
         CoreCategories.put("parameters.text.PrintServerCoreList.Plugins", Arrays.asList("Spigot", "Paper", "Pupur", "Leaves", "Folia", "Lumina", "Luminol", "LightingLuminol"));
         CoreCategories.put("parameters.text.PrintServerCoreList.Mods", Arrays.asList("Fabric", "Quilt", "Forge", "NeoForge"));
         CoreCategories.put("parameters.text.PrintServerCoreList.Mixing", Arrays.asList("Mohist", "Crucible", "CatServer", "Banner", "Youer"));
