@@ -78,7 +78,7 @@ public class MinecraftServerLuncher {
                 }
 
                 // 请求API，获取正式版本版本列表
-                ReleaseVersionAPI.RequestVersionAPI(ServerCore);
+                ReleaseVersionAPI.ReturnVersionAPI(ServerCore);
 
                 // 打印结果
                 PrintReleaseVersions(ReleaseVersionAPI.ReleaseVersions);

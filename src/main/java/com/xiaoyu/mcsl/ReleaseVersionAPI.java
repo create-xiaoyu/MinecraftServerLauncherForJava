@@ -26,101 +26,146 @@ public class ReleaseVersionAPI {
         }
     }
 
+    private static JsonArray CoreVersion;
+
+    private static JsonObject NormalAPIRequestVersion;
+    private static JsonArray RequestListAPIVersionList;
+
     public static String CoreLatestVersion;
-
-    private static final String VanillaVersionAPI = "https://launchermeta.mojang.com/mc/game/version_manifest.json";
-
-    private static final String SpigotVersionAPI = "https://api.mslmc.cn/v3/query/available_versions/spigot";
-
-    private static final String PaperVersionAPI = "https://api.papermc.io/v2/projects/paper";
 
     public static List<CoreVersionInfo> ReleaseVersions = new ArrayList<>();
 
-    public static void RequestVersionAPI(String CoreName) {
+    private static void RequestNormalAPI(String API, String LatestValueName, String ReleaseValueName) {
+        try {
+            HttpClient httpClient = HttpClient.newHttpClient();
+
+            HttpRequest APIRequest = HttpRequest.newBuilder()
+                    .uri(new URI(API))
+                    .timeout(Duration.ofSeconds(10))
+                    .build();
+
+            HttpResponse<String> NormalAPIResponse = httpClient.send(
+                    APIRequest, HttpResponse.BodyHandlers.ofString()
+            );
+
+            Gson gson = new Gson();
+
+            JsonObject root = gson.fromJson(NormalAPIResponse.body(), JsonObject.class);
+
+            if (!LatestValueName.isEmpty()) {
+                NormalAPIRequestVersion = root.getAsJsonObject(LatestValueName);
+            }
+
+            CoreLatestVersion = NormalAPIRequestVersion.get(ReleaseValueName).getAsString();
+
+            CoreVersion = root.getAsJsonArray("versions");
+            ReleaseVersions.clear(); // 清空旧数据
+
+        } catch (Exception Error) {
+            System.err.println(I18n.getI18nMessage("api.error.print") + Error.getMessage());
+        }
+    }
+
+    private static void RequestListAPI(String API, String VersionGroupName, String VersionListName) {
+        try {
+
+            HttpClient httpClient = HttpClient.newHttpClient();
+
+            HttpRequest APIRequest = HttpRequest.newBuilder()
+                    .uri(new URI(API))
+                    .timeout(Duration.ofSeconds(10))
+                    .build();
+
+            HttpResponse<String> ListAPIResponse = httpClient.send(
+                    APIRequest, HttpResponse.BodyHandlers.ofString()
+            );
+
+            Gson gson = new Gson();
+            JsonObject root = gson.fromJson(ListAPIResponse.body(), JsonObject.class);
+
+            // 直接获取版本数组
+            if (VersionGroupName.isEmpty()) {
+                RequestListAPIVersionList = root.getAsJsonArray(VersionListName);
+            } else {
+                // 只有当VersionGroupName非空时才尝试获取对象
+                if (root.has(VersionGroupName)) {
+                    JsonObject versionGroup = root.getAsJsonObject(VersionGroupName);
+                    if (versionGroup != null) {
+                        RequestListAPIVersionList = versionGroup.getAsJsonArray(VersionListName);
+                    }
+                }
+            }
+
+            switch (MinecraftServerLuncher.ServerCore){
+                case "Spigot": {
+                    CoreLatestVersion = RequestListAPIVersionList.get(0).getAsString();
+                    break;
+                }
+                case "Paper", "Pupur": {
+                    int LastVersion = RequestListAPIVersionList.size() - 1;
+                    CoreLatestVersion = RequestListAPIVersionList.get(LastVersion).getAsString();
+                    break;
+                }
+            }
+
+            ReleaseVersions.clear();
+
+        } catch (Exception Error) {
+            System.err.println(I18n.getI18nMessage("api.error.print") + Error.getMessage());
+        }
+    }
+
+    public static void ReturnVersionAPI(String CoreName) {
         switch (CoreName) {
             case "Vanilla": {
-                try {
-
-                    HttpClient httpClient = HttpClient.newHttpClient();
-
-                    HttpRequest APIRequest = HttpRequest.newBuilder()
-                            .uri(new URI(VanillaVersionAPI))
-                            .timeout(Duration.ofSeconds(10))
-                            .build();
-
-                    HttpResponse<String> VanillaAPIResponse = httpClient.send(
-                            APIRequest, HttpResponse.BodyHandlers.ofString()
-                    );
-
-                    Gson gson = new Gson();
-
-                    JsonObject root = gson.fromJson(VanillaAPIResponse.body(), JsonObject.class);
-
-                    JsonObject VanillaAPIRequestVersion = root.getAsJsonObject("latest");
-                    CoreLatestVersion = VanillaAPIRequestVersion.get("release").getAsString();
-
-                    JsonArray CoreVersion = root.getAsJsonArray("versions");
-                    ReleaseVersions.clear(); // 清空旧数据
-
-                    for (JsonElement VanillaAPIRequestVersionElement : CoreVersion) {
-                        JsonObject VanillaVersion = VanillaAPIRequestVersionElement.getAsJsonObject();
-                        String id = VanillaVersion.get("id").getAsString();
-                        String type = VanillaVersion.get("type").getAsString();
-                        if ("release".equals(type)) {
-                            ReleaseVersions.add(new CoreVersionInfo(id, type));
-                        }
+                RequestNormalAPI("https://launchermeta.mojang.com/mc/game/version_manifest.json", "latest", "release");
+                for (JsonElement NormalAPIRequestVersionElement : CoreVersion) {
+                    JsonObject NormalVersion = NormalAPIRequestVersionElement.getAsJsonObject();
+                    String id = NormalVersion.get("id").getAsString();
+                    String type = NormalVersion.get("type").getAsString();
+                    if ("release".equals(type)) {
+                        ReleaseVersions.add(new CoreVersionInfo(id, type));
                     }
-
-                } catch (Exception Error) {
-                    System.err.println(I18n.getI18nMessage("api.error.print") + Error.getMessage());
                 }
                 break;
-
             }
             case "Spigot": {
-                try {
-
-                    HttpClient httpClient = HttpClient.newHttpClient();
-
-                    HttpRequest APIRequest = HttpRequest.newBuilder()
-                            .uri(new URI(SpigotVersionAPI))
-                            .timeout(Duration.ofSeconds(10))
-                            .build();
-
-                    HttpResponse<String> SpigotAPIResponse = httpClient.send(
-                            APIRequest, HttpResponse.BodyHandlers.ofString()
-                    );
-
-                    Gson gson = new Gson();
-                    JsonObject root = gson.fromJson(SpigotAPIResponse.body(), JsonObject.class);
-
-
-                    // 获取数据对象
-                    JsonObject data = root.getAsJsonObject("data");
-                    JsonArray SpigotVersionList = data.getAsJsonArray("versionList");
-
-                    // 设置最新版本（数组第一个元素）
-                    if (!SpigotVersionList.isEmpty()) {
-                        CoreLatestVersion = SpigotVersionList.get(0).getAsString();
-                    }
-
-                    ReleaseVersions.clear();
-
-                    for (JsonElement SpigotVersionElement : SpigotVersionList) {
-                        String version = SpigotVersionElement.getAsString();
-                        ReleaseVersions.add(new CoreVersionInfo(version, "release"));
-                    }
-
-                } catch (Exception Error) {
-                    System.err.println(I18n.getI18nMessage("api.error.print") + Error.getMessage());
+                RequestListAPI("https://api.mslmc.cn/v3/query/available_versions/spigot", "data", "versionList");
+                for (JsonElement ListVersionElement : RequestListAPIVersionList) {
+                    String version = ListVersionElement.getAsString();
+                    ReleaseVersions.add(new CoreVersionInfo(version, "release"));
                 }
                 break;
             }
             case "Paper": {
-                try {
-
-                } catch (Exception Error) {
-                    System.err.println(I18n.getI18nMessage("api.error.print") + Error.getMessage());
+                RequestListAPI("https://api.papermc.io/v2/projects/paper", "", "versions");
+                for (JsonElement ListVersionElement : RequestListAPIVersionList) {
+                    String version = ListVersionElement.getAsString();
+                    ReleaseVersions.add(new CoreVersionInfo(version, "release"));
+                }
+                break;
+            }
+            case "Pupur": {
+                RequestListAPI("https://api.purpurmc.org/v2/purpur/", "", "versions");
+                for (JsonElement ListVersionElement : RequestListAPIVersionList) {
+                    String version = ListVersionElement.getAsString();
+                    ReleaseVersions.add(new CoreVersionInfo(version, "release"));
+                }
+                break;
+            }
+            case "Leaves": {
+                RequestListAPI("https://api.leavesmc.org/v2/projects/leaves", "", "versions");
+                for (JsonElement ListVersionElement : RequestListAPIVersionList) {
+                    String version = ListVersionElement.getAsString();
+                    ReleaseVersions.add(new CoreVersionInfo(version, "release"));
+                }
+                break;
+            }
+            case "Folia": {
+                RequestListAPI("https://api.mslmc.cn/v3/query/available_versions/folia", "data", "versionList");
+                for (JsonElement ListVersionElement : RequestListAPIVersionList) {
+                    String version = ListVersionElement.getAsString();
+                    ReleaseVersions.add(new CoreVersionInfo(version, "release"));
                 }
                 break;
             }
