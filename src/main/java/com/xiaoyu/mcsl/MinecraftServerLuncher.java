@@ -13,7 +13,7 @@ public class MinecraftServerLuncher {
         return scanner.nextLine().trim(); // 去除首尾空白字符
     }
 
-    public static void PrintReleaseVersions(List<API.CoreVersionInfo> versions) {
+    public static void PrintReleaseVersions(List<ReleaseVersionAPI.CoreVersionInfo> versions) {
         if (versions.isEmpty()) {
             System.out.println(I18n.getI18nMessage("mcsl.printreleaseversions.norelease"));
             return;
@@ -32,7 +32,7 @@ public class MinecraftServerLuncher {
         System.out.println("\n" + ServerCore + I18n.getI18nMessage("mcsl.printreleaseversions.release") + "\n");
 
         int count = 0;
-        for (API.CoreVersionInfo version : versions) {
+        for (ReleaseVersionAPI.CoreVersionInfo version : versions) {
             // 格式化每个版本号，固定宽度右对齐
             String formatted = String.format("%-" + columnWidth + "s", version.CoreVersionID);
             System.out.print(formatted);
@@ -44,7 +44,7 @@ public class MinecraftServerLuncher {
         }
 
         System.out.println();
-        System.out.println("\nLatest version: " + API.CoreLatestVersion);
+        System.out.println("\nLatest version: " + ReleaseVersionAPI.CoreLatestVersion);
         System.out.println();
         System.out.println("Total releases: " + versions.size());
     }
@@ -77,11 +77,14 @@ public class MinecraftServerLuncher {
                     return;
                 }
 
-                // 请求API
-                API.RequestAPI(ServerCore);
+                // 请求API，获取正式版本版本列表
+                ReleaseVersionAPI.RequestVersionAPI(ServerCore);
 
                 // 打印结果
-                PrintReleaseVersions(API.ReleaseVersions);
+                PrintReleaseVersions(ReleaseVersionAPI.ReleaseVersions);
+
+
+
                 break;
 
             case "--PrintServerCoreList":
